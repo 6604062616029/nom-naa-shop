@@ -59,3 +59,7 @@ func (m *MockCartRepository) GetDB() *gorm.DB {
 func (m *MockCartRepository) GetCartWithItems(cartID uuid.UUID) (*models.Cart, error) {
 	return m.Called(cartID).Get(0).(*models.Cart), m.Called(cartID).Error(0)
 }
+
+func (m *MockCartRepository) GetCartWithItemsAndSnack(cartID uuid.UUID) (*models.Cart, error) {
+	return m.Called(cartID).Get(0).(*models.Cart), m.Called(cartID).Error(0)
+}

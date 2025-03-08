@@ -17,21 +17,20 @@ type CartService interface {
 	UpdateItemFromCart(req request.UpdateItemFromCartRequest, userContext models.UserContext) (*models.Cart, int, error)
 	ConfirmCart(cartID uuid.UUID, userContext models.UserContext) (*models.Cart, int, error)
 	DeleteItemFromCart(itemID uuid.UUID, userContext models.UserContext) (*models.Cart, int, error)
+	CancelCart(cartID uuid.UUID, userContext models.UserContext) (*models.Cart, int, error)
 }
 
 type CartServiceImpl struct {
 	cartRepository  repositories.CartRepository
 	snackRepository repositories.SnackRepository
 	itemRepository  repositories.ItemRepository
-	db              *gorm.DB
 }
 
-func NewCartService(cartRepository repositories.CartRepository, snackRepository repositories.SnackRepository, itemRepository repositories.ItemRepository, db *gorm.DB) *CartServiceImpl {
+func NewCartService(cartRepository repositories.CartRepository, snackRepository repositories.SnackRepository, itemRepository repositories.ItemRepository) *CartServiceImpl {
 	return &CartServiceImpl{
 		cartRepository:  cartRepository,
 		snackRepository: snackRepository,
 		itemRepository:  itemRepository,
-		db:              db,
 	}
 }
 
@@ -53,7 +52,6 @@ func (s *CartServiceImpl) AddItemToCart(req request.AddItemToCartRequest, userCo
 	isExist := false
 	var existingItem *models.Item
 
-	// Check if the item already exists in the cart
 	for i := range cart.Items {
 		if cart.Items[i].SnackID == req.SnackID {
 			isExist = true
@@ -61,14 +59,13 @@ func (s *CartServiceImpl) AddItemToCart(req request.AddItemToCartRequest, userCo
 			break
 		}
 	}
-	// If the item exists, update the quantity
+
 	if isExist {
 		existingItem.Quantity += req.Quantity
 		if err := s.itemRepository.Update(existingItem); err != nil {
 			return nil, fiber.StatusInternalServerError, errors.New("failed to update item: " + err.Error())
 		}
 	} else {
-		// If the item doesn't exist, create a new one
 		newItem := models.Item{
 			SnackID:  req.SnackID,
 			Quantity: req.Quantity,
@@ -80,7 +77,6 @@ func (s *CartServiceImpl) AddItemToCart(req request.AddItemToCartRequest, userCo
 		}
 	}
 
-	// Fetch the updated cart with all related data
 	updatedCart, err := s.cartRepository.GetCartByID(cart.ID)
 	if err != nil {
 		return nil, fiber.StatusInternalServerError, errors.New("failed to fetch updated cart: " + err.Error())
@@ -98,13 +94,12 @@ func (s *CartServiceImpl) GetCartByID(id uuid.UUID) (*models.Cart, int, error) {
 		return nil, fiber.StatusInternalServerError, err
 	}
 
-	// If Items are loaded but Snacks aren't, you might need to load them manually
 	for i := range cart.Items {
-		var snack models.Snack
-		if err := s.db.Where("id = ?", cart.Items[i].SnackID).First(&snack).Error; err != nil {
+		snack, err := s.snackRepository.GetSnackByID(cart.Items[i].SnackID)
+		if err != nil {
 			return nil, fiber.StatusInternalServerError, err
 		}
-		cart.Items[i].Snack = snack
+		cart.Items[i].Snack = *snack
 	}
 
 	return cart, fiber.StatusOK, nil
@@ -162,15 +157,8 @@ func (s *CartServiceImpl) DeleteItemFromCart(itemID uuid.UUID, userContext model
 }
 
 func (s *CartServiceImpl) ConfirmCart(cartID uuid.UUID, userContext models.UserContext) (*models.Cart, int, error) {
-	// Get cart with items and their associated snacks using a more detailed query
-	var cart models.Cart
-	if err := s.db.
-		Preload("Items", func(db *gorm.DB) *gorm.DB {
-			return db.Order("items.id")
-		}).
-		Preload("Items.Snack").
-		Where("id = ?", cartID).
-		First(&cart).Error; err != nil {
+	cart, err := s.cartRepository.GetCartWithItemsAndSnack(cartID)
+	if err != nil {
 		return nil, fiber.StatusInternalServerError, err
 	}
 
@@ -178,7 +166,6 @@ func (s *CartServiceImpl) ConfirmCart(cartID uuid.UUID, userContext models.UserC
 		return nil, fiber.StatusBadRequest, errors.New("cart not found")
 	}
 
-	// Verify cart belongs to user
 	userUUID, err := uuid.Parse(userContext.ID)
 	if err != nil {
 		return nil, fiber.StatusInternalServerError, err
@@ -188,22 +175,40 @@ func (s *CartServiceImpl) ConfirmCart(cartID uuid.UUID, userContext models.UserC
 		return nil, fiber.StatusForbidden, errors.New("cart does not belong to user")
 	}
 
-	// Start transaction
 	tx := s.cartRepository.Begin()
 
-	// Update cart status to "confirmed" - only update the status field
 	if err := tx.Model(&models.Cart{}).Where("id = ?", cart.ID).Update("status", "confirmed").Error; err != nil {
 		tx.Rollback()
 		return nil, fiber.StatusInternalServerError, err
 	}
 
-	// Commit transaction
 	if err := tx.Commit().Error; err != nil {
 		return nil, fiber.StatusInternalServerError, err
 	}
 
-	// Return the cart we already loaded, but update its status field
-	// This ensures we return the exact same item and snack IDs
 	cart.Status = "confirmed"
-	return &cart, fiber.StatusOK, nil
+	return cart, fiber.StatusOK, nil
+}
+
+func (s *CartServiceImpl) CancelCart(cartID uuid.UUID, userContext models.UserContext) (*models.Cart, int, error) {
+	cart, err := s.cartRepository.GetCartByCondition("user_id = ? AND status = ?", userContext.ID, "pending")
+	if err != nil {
+		return nil, fiber.StatusInternalServerError, err
+	}
+
+	if cart.ID == uuid.Nil {
+		return nil, fiber.StatusBadRequest, errors.New("cart not found")
+	}
+
+	userUUID, err := uuid.Parse(userContext.ID)
+	if err != nil {
+		return nil, fiber.StatusInternalServerError, err
+	}
+
+	if cart.UserID != userUUID {
+		return nil, fiber.StatusForbidden, errors.New("cart does not belong to user")
+	}
+
+	cart.Status = "pending"
+	return cart, fiber.StatusOK, nil
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/baimhons/nom-naa-shop.git/internal/models"
 	"github.com/baimhons/nom-naa-shop.git/internal/repositories"
 	"github.com/baimhons/nom-naa-shop.git/internal/utils"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -23,6 +24,7 @@ type UserService interface {
 	GetUserProfile(userContext models.UserContext) (resp response.SuccessResponse, statusCode int, err error)
 	GetAllUsers() (resp response.SuccessResponse, statusCode int, err error)
 	UpdateUser(req request.UpdateUser) (resp response.SuccessResponse, statusCode int, err error)
+	DeleteUser(id uuid.UUID) (statusCode int, err error)
 }
 
 type userServiceImpl struct {
@@ -206,5 +208,16 @@ func (us *userServiceImpl) UpdateUser(req request.UpdateUser) (resp response.Suc
 		return resp, http.StatusInternalServerError, err
 	}
 
-	return resp, http.StatusOK, nil
+	return response.SuccessResponse{
+		Message: "User updated successfully",
+		Data:    user,
+	}, http.StatusOK, nil
+}
+
+func (us *userServiceImpl) DeleteUser(id uuid.UUID) (statusCode int, err error) {
+	if err := us.userRepository.Delete(&models.User{BaseModel: models.BaseModel{ID: id}}); err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	return http.StatusOK, nil
 }

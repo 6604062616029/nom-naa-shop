@@ -10,4 +10,5 @@ type User struct {
 	PhoneNumber string    `gorm:"not null"`
 	Role        string    `gorm:"not null"`
 	Addresses   []Address `gorm:"foreignKey:UserID"`
+	Reviews     []Review  `gorm:"foreignKey:UserID"`
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/baimhons/nom-naa-shop.git/internal/models"
 	"github.com/baimhons/nom-naa-shop.git/internal/services"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 type UserHandler struct {
@@ -120,5 +121,19 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	return c.Status(statusCode).JSON(response.SuccessResponse{
 		Message: "User updated successfully",
 		Data:    user,
+	})
+}
+
+func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
+	id := c.Params("id")
+	statusCode, err := h.userService.DeleteUser(uuid.MustParse(id))
+	if err != nil {
+		return c.Status(statusCode).JSON(response.ErrorResponse{
+			Message: err.Error(),
+		})
+	}
+
+	return c.Status(statusCode).JSON(response.SuccessResponse{
+		Message: "User deleted successfully",
 	})
 }

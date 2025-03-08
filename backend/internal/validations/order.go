@@ -7,30 +7,37 @@ import (
 	"github.com/google/uuid"
 )
 
-type OrderValidationImp struct {
+type OrderValidationImpl struct {
 }
 
 type OrderValidation interface {
 	ValidateConfirmOrder(c *fiber.Ctx) error
+	ValidateUpdateOrderStatus(c *fiber.Ctx) error
 }
 
 func NewOrderValidation() OrderValidation {
-	return &OrderValidationImp{}
+	return &OrderValidationImpl{}
 }
 
-func (v *OrderValidationImp) ValidateConfirmOrder(c *fiber.Ctx) error {
+func (v *OrderValidationImpl) ValidateConfirmOrder(c *fiber.Ctx) error {
 	var req request.OrderRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse{
-			Message: "Invalid request body",
-		})
-	}
+
+	validateCommonRequestBody(c, &req)
 
 	if req.CartID == uuid.Nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse{
 			Message: "Cart ID is required",
 		})
 	}
+
+	c.Locals("req", req)
+	return c.Next()
+}
+
+func (v *OrderValidationImpl) ValidateUpdateOrderStatus(c *fiber.Ctx) error {
+	var req request.UpdateOrderStatusRequest
+
+	validateCommonRequestBody(c, &req)
 
 	c.Locals("req", req)
 	return c.Next()

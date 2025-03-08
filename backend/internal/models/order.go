@@ -14,4 +14,5 @@ type Order struct {
 	PaymentMethod string    `gorm:"not null"`
 	AddressID     uuid.UUID `gorm:"not null"`
 	Address       Address   `gorm:"foreignKey:AddressID"`
+	Payment       *Payment  `gorm:"foreignKey:OrderID"`
 }

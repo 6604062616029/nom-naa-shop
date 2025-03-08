@@ -22,7 +22,6 @@ func NewAddressHandler(addressService services.AddressService) *AddressHandler {
 
 func (h *AddressHandler) GetProvince(c *fiber.Ctx) error {
 	provinceCode := c.Params("province_code")
-	// Convert string ID to int since GetProvinceByID expects an int
 	provinceCodeInt, err := strconv.Atoi(provinceCode)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse{
@@ -44,7 +43,6 @@ func (h *AddressHandler) GetProvince(c *fiber.Ctx) error {
 
 func (h *AddressHandler) GetDistrict(c *fiber.Ctx) error {
 	districtCode := c.Params("district_code")
-	// Convert string ID to int since GetDistrictByID expects an int
 	districtCodeInt, err := strconv.Atoi(districtCode)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse{
@@ -66,7 +64,6 @@ func (h *AddressHandler) GetDistrict(c *fiber.Ctx) error {
 
 func (h *AddressHandler) GetSubDistrict(c *fiber.Ctx) error {
 	subDistrictCode := c.Params("sub_district_code")
-	// Convert string ID to int since GetSubDistrictByID expects an int
 	subDistrictCodeInt, err := strconv.Atoi(subDistrictCode)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse{
@@ -172,7 +169,6 @@ func (h *AddressHandler) GetAllAddress(c *fiber.Ctx) error {
 		})
 	}
 
-	// Convert userContext.ID to UUID properly
 	userUUID, err := uuid.Parse(userContext.ID)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(response.ErrorResponse{

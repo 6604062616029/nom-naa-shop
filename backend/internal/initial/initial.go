@@ -45,24 +45,29 @@ func InitializeApp() *App {
 	userRepository := repositories.NewUserRepository(db)
 	addressRepository := repositories.NewAddressRepository(db)
 	snackRepository := repositories.NewSnackRepository(db)
+	reviewRepository := repositories.NewReviewRepository(db)
 	provinceRepo := repositories.NewRegionRepository[addressModel.Province](db)
 	districtRepo := repositories.NewRegionRepository[addressModel.Districts](db)
 	subDistrictRepo := repositories.NewRegionRepository[addressModel.SubDistricts](db)
 	cartRepository := repositories.NewCartRepository(db)
 	itemRepository := repositories.NewItemRepository(db)
 	orderRepository := repositories.NewOrderRepository(db)
+	paymentRepository := repositories.NewPaymentRepository(db)
 
 	userService := services.NewUserService(userRepository, cartRepository, redisClient)
 	addressService := services.NewAddressService(addressRepository, provinceRepo, districtRepo, subDistrictRepo)
-	snackService := services.NewSnackService(snackRepository)
-	cartService := services.NewCartService(cartRepository, snackRepository, itemRepository, db)
+	snackService := services.NewSnackService(snackRepository, reviewRepository)
+	cartService := services.NewCartService(cartRepository, snackRepository, itemRepository)
 	orderService := services.NewOrderService(orderRepository, cartRepository)
+	paymentService := services.NewPaymentService(paymentRepository)
 	userHandler := handlers.NewUserHandler(userService)
 	addressHandler := handlers.NewAddressHandler(addressService)
 	snackHandler := handlers.NewSnackHandler(snackService)
 	cartHandler := handlers.NewCartHandler(cartService)
 	orderHandler := handlers.NewOrderHandler(orderService)
+	paymentHandler := handlers.NewPaymentHandler(paymentService)
 	userValidate := validations.NewUserValidate()
+	snackValidate := validations.NewSnackValidate()
 
 	authMiddleware := middlewares.NewAuthMiddleware(redis)
 
@@ -70,10 +75,10 @@ func InitializeApp() *App {
 
 	userRoutes := routers.NewUserRountes(apiRoutes, userHandler, userValidate, authMiddleware)
 	addressRoutes := routers.NewAddressRouter(apiRoutes, addressHandler, authMiddleware)
-	snackRoutes := routers.NewSnackRouter(apiRoutes, snackHandler, authMiddleware)
+	snackRoutes := routers.NewSnackRouter(apiRoutes, snackHandler, authMiddleware, userValidate, snackValidate)
 	cartRoutes := routers.NewCartRouter(apiRoutes, cartHandler, authMiddleware)
-	orderRoutes := routers.NewOrderRouter(apiRoutes, orderHandler, authMiddleware)
-
+	orderRoutes := routers.NewOrderRouter(apiRoutes, orderHandler, authMiddleware, userValidate)
+	paymentRoutes := routers.NewPaymentRouter(apiRoutes, paymentHandler, authMiddleware)
 	return &App{
 		App:   app,
 		DB:    db,
@@ -84,6 +89,7 @@ func InitializeApp() *App {
 			snackRoutes.SetupRoutes()
 			cartRoutes.SetupRoutes()
 			orderRoutes.SetupRoutes()
+			paymentRoutes.SetupRoutes()
 		},
 	}
 }

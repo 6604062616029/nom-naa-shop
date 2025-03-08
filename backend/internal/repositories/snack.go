@@ -9,6 +9,7 @@ import (
 type SnackRepository interface {
 	BaseRepository[models.Snack]
 	GetSnackByID(id uuid.UUID) (snack *models.Snack, err error)
+	GetSnackByIDWithReview(id uuid.UUID) (snack *models.Snack, err error)
 }
 
 type snackRepositoryImpl struct {
@@ -25,4 +26,8 @@ func NewSnackRepository(db *gorm.DB) SnackRepository {
 
 func (r *snackRepositoryImpl) GetSnackByID(id uuid.UUID) (snack *models.Snack, err error) {
 	return snack, r.DB.Where("id = ?", id).First(&snack).Error
+}
+
+func (r *snackRepositoryImpl) GetSnackByIDWithReview(id uuid.UUID) (snack *models.Snack, err error) {
+	return snack, r.DB.Where("id = ?", id).Preload("Reviews").First(&snack).Error
 }

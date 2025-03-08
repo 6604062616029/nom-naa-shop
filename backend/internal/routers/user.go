@@ -27,4 +27,5 @@ func (r *UserRountes) SetupRoutes() {
 	users.Get("/profile", r.authMiddleware.AuthToken, r.userHandler.GetUserProfile)
 	users.Get("/all", r.authMiddleware.AuthToken, r.userValidate.ValidateRoleAdmin, r.userHandler.GetAllUsers)
 	users.Put("/profile", r.authMiddleware.AuthToken, r.validate.ValidateUpdateUser, r.userHandler.UpdateUser)
+	users.Delete("/:id", r.authMiddleware.AuthToken, r.validate.ValidateRoleAdmin, r.userHandler.DeleteUser)
 }

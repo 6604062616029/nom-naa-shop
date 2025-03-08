@@ -12,7 +12,7 @@ type CreateAddressRequest struct {
 }
 
 type UpdateAddressRequest struct {
-	ID              uuid.UUID `json:"id,omitempty"` // For updating an existing address
+	ID              uuid.UUID `json:"id,omitempty"` 
 	ProvinceCode    int       `json:"province_code" validate:"required"`
 	DistrictCode    int       `json:"district_code" validate:"required"`
 	SubDistrictCode int       `json:"sub_district_code" validate:"required"`

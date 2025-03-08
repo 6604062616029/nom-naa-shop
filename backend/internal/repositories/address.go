@@ -11,7 +11,6 @@ type AddressRepository interface {
 	BaseRepository[models.Address]
 	GetAllByUserID(userID uuid.UUID, items *[]models.Address) error
 
-	// Add methods for province, districts, sub-districts
 	GetProvinceByCode(provinceCode int, province *addressModel.Province) error
 	GetDistrictByCode(districtCode int, district *addressModel.Districts) error
 	GetSubDistrictByCode(subDistrictCode int, subDistrict *addressModel.SubDistricts) error

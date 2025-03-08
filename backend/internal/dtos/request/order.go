@@ -7,3 +7,8 @@ type OrderRequest struct {
 	CartID        uuid.UUID `json:"cart_id"`
 	PaymentMethod string    `json:"payment_method"`
 }
+
+type UpdateOrderStatusRequest struct {
+	OrderID uuid.UUID `json:"order_id"`
+	Status  string    `json:"status"`
+}

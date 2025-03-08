@@ -39,12 +39,11 @@ func (h *SnackHandler) GetSnackImage(c *fiber.Ctx) error {
 		})
 	}
 
-	c.Set("Content-Type", "image/jpeg")            // หรือ image/png
-	return c.Send(snack.Data.(models.Snack).Image) // ส่งเป็นไฟล์ภาพ
+	c.Set("Content-Type", "image/jpeg")
+	return c.Send(snack.Data.(models.Snack).Image)
 }
 
 func (h *SnackHandler) GetAllSnacks(c *fiber.Ctx) error {
-	// Ensure query parameters are parsed correctly
 	page, err := strconv.Atoi(c.Query("page", "0"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.ErrorResponse{
@@ -60,7 +59,6 @@ func (h *SnackHandler) GetAllSnacks(c *fiber.Ctx) error {
 	sort := c.Query("sort", "name")
 	order := c.Query("order", "asc")
 
-	// Create a PaginationQuery object
 	querys := request.PaginationQuery{
 		Page:     &page,
 		PageSize: &pageSize,
@@ -68,7 +66,6 @@ func (h *SnackHandler) GetAllSnacks(c *fiber.Ctx) error {
 		Order:    &order,
 	}
 
-	// Pass the query object to the service
 	resp, statusCode, err := h.snackService.GetAllSnacks(querys)
 	if err != nil {
 		return c.Status(statusCode).JSON(response.ErrorResponse{
@@ -97,6 +94,30 @@ func (h *SnackHandler) DeleteSnack(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(statusCode).JSON(response.ErrorResponse{
 			Message: "Failed to delete snack: " + err.Error(),
+		})
+	}
+	return c.Status(statusCode).JSON(resp)
+}
+
+func (h *SnackHandler) CreateReview(c *fiber.Ctx) error {
+	req := c.Locals("req").(request.CreateReviewRequest)
+	userContext := c.Locals("userContext").(models.UserContext)
+	resp, statusCode, err := h.snackService.CreateReview(req, userContext)
+	if err != nil {
+		return c.Status(statusCode).JSON(response.ErrorResponse{
+			Message: "Failed to create review: " + err.Error(),
+		})
+	}
+	return c.Status(statusCode).JSON(resp)
+}
+
+func (h *SnackHandler) GetAllReviews(c *fiber.Ctx) error {
+	querys := c.Locals("querys").(request.PaginationQuery)
+	snackID := c.Params("snack_id")
+	resp, statusCode, err := h.snackService.GetAllReviewsBySnackID(querys, uuid.MustParse(snackID))
+	if err != nil {
+		return c.Status(statusCode).JSON(response.ErrorResponse{
+			Message: "Failed to get all reviews: " + err.Error(),
 		})
 	}
 	return c.Status(statusCode).JSON(resp)

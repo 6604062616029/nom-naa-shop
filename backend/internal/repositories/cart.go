@@ -12,6 +12,7 @@ type CartRepository interface {
 	GetCartByID(id uuid.UUID) (*models.Cart, error)
 	GetDB() *gorm.DB
 	GetCartWithItems(cartID uuid.UUID) (*models.Cart, error)
+	GetCartWithItemsAndSnack(cartID uuid.UUID) (*models.Cart, error)
 }
 
 type CartRepositoryImpl struct {
@@ -48,6 +49,20 @@ func (r *CartRepositoryImpl) GetCartWithItems(cartID uuid.UUID) (*models.Cart, e
 		Preload("Items").
 		Preload("Items.Snack").
 		First(&cart, cartID).Error; err != nil {
+		return nil, err
+	}
+	return &cart, nil
+}
+
+func (r *CartRepositoryImpl) GetCartWithItemsAndSnack(cartID uuid.UUID) (*models.Cart, error) {
+	var cart models.Cart
+	if err := r.DB.
+		Preload("Items", func(db *gorm.DB) *gorm.DB {
+			return db.Order("items.id")
+		}).
+		Preload("Items.Snack").
+		Where("id = ?", cartID).
+		First(&cart).Error; err != nil {
 		return nil, err
 	}
 	return &cart, nil

@@ -21,9 +21,8 @@
 go.work
 go.work.sum
 
-
-# .env file for deployment
-deployment/env.env
-
-# .env file for internal
-internal/configs/env.go
+# Environment files
+.env
+**/.env
+backend/deployment/env/.env
+backend/internal/configs/env.go

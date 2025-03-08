@@ -5,6 +5,7 @@ import (
 	"mime/multipart"
 
 	"github.com/baimhons/nom-naa-shop.git/internal/models"
+	"github.com/google/uuid"
 )
 
 type CreateSnackRequest struct {
@@ -20,6 +21,12 @@ type UpdateSnackRequest struct {
 	Price    float64                 `form:"price" validate:"required"`
 	Quantity int                     `form:"quantity" validate:"required"`
 	Files    []*multipart.FileHeader `form:"files" `
+}
+
+type CreateReviewRequest struct {
+	SnackID uuid.UUID `json:"snack_id" validate:"required"`
+	Rating  int       `json:"rating" validate:"required"`
+	Comment string    `json:"comment" validate:"required"`
 }
 
 func (r *CreateSnackRequest) ToModel() (*models.Snack, error) {

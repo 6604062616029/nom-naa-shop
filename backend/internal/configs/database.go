@@ -54,7 +54,6 @@ func autoMigrate(db *gorm.DB) {
 }
 
 func initalAdmin(db *gorm.DB) {
-	// Check if any user with the role "admin" exists
 	var adminCount int64
 	db.Model(&models.User{}).Where("role = ?", "admin").Count(&adminCount)
 

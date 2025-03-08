@@ -8,6 +8,6 @@ type Review struct {
 	User    User      `gorm:"foreignKey:UserID"`
 	SnackID uuid.UUID `gorm:"not null"`
 	Snack   Snack     `gorm:"foreignKey:SnackID"`
-	Rating  int       `gorm:"not null"`
-	Comment string    `gorm:"not null"`
+	Rating  int       `gorm:"rating;not null"`
+	Comment string    `gorm:"comment;not null"`
 }

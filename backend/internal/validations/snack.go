@@ -1,6 +1,8 @@
 package validations
 
 import (
+	"fmt"
+
 	"github.com/baimhons/nom-naa-shop.git/internal/dtos/request"
 	"github.com/gofiber/fiber/v2"
 )
@@ -49,5 +51,27 @@ func (v *SnackValidateImpl) ValidateUpdateSnackRequest(c *fiber.Ctx) error {
 	}
 
 	c.Locals("req", req)
+	return c.Next()
+}
+
+func (v *SnackValidateImpl) ValidateCreateReviewRequest(c *fiber.Ctx) error {
+	var req request.CreateReviewRequest
+
+	validateCommonRequestBody(c, &req)
+
+	c.Locals("req", req)
+	return c.Next()
+}
+
+func (v *SnackValidateImpl) ValidateGetAllReviewsRequest(c *fiber.Ctx) error {
+	querys := request.PaginationQuery{}
+
+	if err := validateCommonPaginationQuery(c, &querys); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": fmt.Sprintf("failed to validate request: %s", err.Error()),
+		})
+	}
+
+	c.Locals("querys", querys)
 	return c.Next()
 }

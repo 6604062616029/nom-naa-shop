@@ -18,18 +18,20 @@ type SnackService interface {
 	GetSnackByID(id uuid.UUID) (resp response.SuccessResponse, statusCode int, err error)
 	UpdateSnack(req request.UpdateSnackRequest, userContext models.UserContext, id uuid.UUID) (resp response.SuccessResponse, statusCode int, err error)
 	DeleteSnack(id uuid.UUID) (resp response.SuccessResponse, statusCode int, err error)
+	CreateReview(req request.CreateReviewRequest, userContext models.UserContext) (resp response.SuccessResponse, statusCode int, err error)
+	GetAllReviewsBySnackID(querys request.PaginationQuery, snackID uuid.UUID) (resp response.SuccessResponse, statusCode int, err error)
 }
 
 type snackServiceImpl struct {
-	snackRepository repositories.SnackRepository
+	snackRepository  repositories.SnackRepository
+	reviewRepository repositories.ReviewRepository
 }
 
-func NewSnackService(snackRepository repositories.SnackRepository) SnackService {
-	return &snackServiceImpl{snackRepository: snackRepository}
+func NewSnackService(snackRepository repositories.SnackRepository, reviewRepository repositories.ReviewRepository) SnackService {
+	return &snackServiceImpl{snackRepository: snackRepository, reviewRepository: reviewRepository}
 }
 
 func (s *snackServiceImpl) CreateSnack(req request.CreateSnackRequest) (resp response.SuccessResponse, statusCode int, err error) {
-
 	snack, err := req.ToModel()
 	if err != nil {
 		return resp, http.StatusInternalServerError, err
@@ -107,6 +109,46 @@ func (s *snackServiceImpl) UpdateSnack(req request.UpdateSnackRequest, userConte
 		Message: "Snack updated successfully",
 		Data:    existingSnack,
 	}, http.StatusOK, nil
+}
+
+func (s *snackServiceImpl) CreateReview(req request.CreateReviewRequest, userContext models.UserContext) (resp response.SuccessResponse, statusCode int, err error) {
+	if userContext.ID == "" {
+		return resp, http.StatusUnauthorized, fmt.Errorf("unauthorized user")
+	}
+
+	userID, err := uuid.Parse(userContext.ID)
+	if err != nil {
+		return resp, http.StatusInternalServerError, err
+	}
+
+	review := models.Review{
+		UserID:  userID,
+		SnackID: req.SnackID,
+		Rating:  req.Rating,
+		Comment: req.Comment,
+	}
+
+	if err := s.reviewRepository.Create(&review); err != nil {
+		return resp, http.StatusInternalServerError, err
+	}
+
+	return response.SuccessResponse{
+		Message: "Review created successfully",
+		Data:    review,
+	}, http.StatusCreated, nil
+}
+
+func (s *snackServiceImpl) GetAllReviewsBySnackID(querys request.PaginationQuery, snackID uuid.UUID) (resp response.SuccessResponse, statusCode int, err error) {
+	reviews := []models.Review{}
+	if err := s.reviewRepository.GetAllBySnackID(&reviews, &querys, snackID); err != nil {
+		return resp, http.StatusInternalServerError, err
+	}
+
+	return response.SuccessResponse{
+		Message: "Reviews fetched successfully",
+		Data:    reviews,
+	}, http.StatusOK, nil
+
 }
 
 func (s *snackServiceImpl) DeleteSnack(id uuid.UUID) (resp response.SuccessResponse, statusCode int, err error) {
